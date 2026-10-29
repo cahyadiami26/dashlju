@@ -1,0 +1,21 @@
+CREATE TABLE `users` (
+  `id` int(11) NOT NULL,
+  `nik` varchar(50) DEFAULT NULL,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `position` enum('Direktur Utama','Direktur Operasional','Kepala Bidang','Kepala Divisi','Manager','Sekretaris','Staff','System Administrator','Corporate Secretary','Sekretaris Direksi','Sekretaris Komisaris') DEFAULT NULL,
+  `division` enum('Keuangan','Pengadaan','Keamanan','Infokom','SDM','Direksi','IT','Legal','Kesekretariatan','Jasa Konstruksi','Pengangkutan & Pergudangan','Perdagangan','Energi & Migas','Direksi') DEFAULT NULL,
+  `department` enum('Direksi','Keuangan & Umum','Bisnis','Sekretariat','Pengawas Internal') DEFAULT NULL,
+  `username` varchar(50) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('admin','user','op_arsip') DEFAULT 'user',
+  `avatar` varchar(255) DEFAULT NULL,
+  `photo` varchar(255) DEFAULT NULL,
+  `signature` varchar(255) DEFAULT NULL,
+  `rfid` varchar(50) DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `webmail_user` varchar(200) NOT NULL,
+  `webmail_pass` varchar(16) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
