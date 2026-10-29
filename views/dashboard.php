@@ -1,0 +1,839 @@
+<?php
+/**
+ * View Dashboard App Selector - Clean & Elegant Theme
+ * File: views/dashboard.php
+ */
+require_once __DIR__ . '/../config/session.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../config/apps.php'; 
+
+$user = getSessionUser();
+
+$avatarUrl = !empty($user['avatar']) ? 'https://dms.lju.co.id/uploads/avatars/' . htmlspecialchars($user['avatar']) : '';
+$photoUrl  = !empty($user['photo']) ? 'https://dms.lju.co.id/uploads/photos/' . htmlspecialchars($user['photo']) : '';
+$sigUrl    = !empty($user['signature']) ? 'https://dms.lju.co.id/uploads/signatures/' . htmlspecialchars($user['signature']) : '';
+
+$email = $user['webmail_user'] ?? ($user['email'] ?? '');
+$apps  = getAppsConfig();
+
+$userDiv  = strtolower($user['division'] ?? '');
+$userDept = strtolower($user['department'] ?? '');
+$userRole = strtolower($user['role'] ?? '');
+
+$isInfokom = ($userDiv === 'infokom');
+$isDireksi = ($userDiv === 'direksi' || $userDept === 'direksi' || $userRole === 'admin');
+
+$jumlahUserOnline = getActiveUserCount();
+$onlineUsersList  = getOnlineUsersList();
+checkSessionTimeout();
+$timeout = $_SESSION['last_activity'];
+?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Selector - LJU Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1e40af;
+            --primary-teal: #14b8a6;
+            --text-dark: #0f172a;
+            --text-gray: #64748b;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            color: var(--text-dark);
+            background-color: #f0fdfa;
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(186,100%,86%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(199,89%,48%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 100%, hsla(173,80%,40%,1) 0, transparent 50%),
+                radial-gradient(at 0% 100%, hsla(217,100%,45%,0.8) 0, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            max-height: 40px;
+        }
+
+        .brand img, .brand-logo {
+            display: block;
+            height: 36px;
+            width: auto;
+            max-width: 160px;
+            object-fit: contain;
+            object-position: left center;
+        }
+
+        .brand-text {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary-blue);
+            letter-spacing: -0.5px;
+            white-space: nowrap;
+        }
+
+        .brand-text span { color: var(--primary-teal); }
+
+        .user-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Topbar Presensi Button */
+        .topbar-attendance-btn {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+        }
+
+        .topbar-attendance-btn:hover {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+        }
+
+        .topbar-attendance-btn svg { width: 16px; height: 16px; }
+
+        .user-meta { text-align: right; display: none; }
+        @media(min-width: 768px) { .user-meta { display: block; } }
+
+        .user-meta .name { font-size: 14px; font-weight: 700; color: var(--text-dark); line-height: 1.2; }
+        .user-meta .role { font-size: 12px; color: var(--text-gray); font-weight: 500; line-height: 1.2; }
+
+        .user-avatar-container {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
+        }
+        .user-avatar-container:hover { transform: scale(1.05); }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-teal));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(20, 184, 166, 0.25);
+            position: relative;
+        }
+
+        .user-avatar img { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2;
+        }
+        .user-avatar span { position: relative; z-index: 1; }
+
+        .btn-logout {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-logout:hover {
+            background: #ef4444; color: white; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+        .btn-logout svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        @media (max-width: 600px) {
+            .nav-container { padding: 10px 16px; height: 56px; }
+            .brand img, .brand-logo { height: 30px; max-width: 120px; }
+            .btn-logout .logout-text, .topbar-attendance-btn span { display: none; }
+            .topbar-attendance-btn { padding: 8px; border-radius: 8px; }
+            .user-avatar { width: 36px; height: 36px; min-width: 36px; font-size: 14px; }
+        }
+
+        /* Container Main */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        .hero { margin-bottom: 35px; text-align: center; }
+        .hero h1 { font-size: 32px; font-weight: 800; color: var(--text-dark); margin-bottom: 10px; letter-spacing: -0.5px; }
+        .hero p { color: var(--text-gray); font-size: 16px; font-weight: 500; margin-bottom: 20px; }
+
+        /* Online Users Badge Button */
+        .online-users-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+            padding: 8px 18px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(20, 184, 166, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .online-users-badge:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(20, 184, 166, 0.2);
+            background: #ffffff;
+        }
+
+        .pulse-dot {
+            position: relative;
+            width: 10px;
+            height: 10px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .pulse-dot::after {
+            content: '';
+            position: absolute;
+            top: -3px; left: -3px; right: -3px; bottom: -3px;
+            border: 2px solid #10b981;
+            border-radius: 50%;
+            animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.6); opacity: 0; }
+            100% { transform: scale(0.95); opacity: 0; }
+        }
+
+        .online-users-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-dark);
+            letter-spacing: -0.2px;
+        }
+
+        .online-users-text strong {
+            color: var(--primary-blue);
+            font-weight: 800;
+        }
+
+        /* Grid Aplikasi */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        /* Card Aplikasi */
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid #f1f5f9;
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+
+        .app-card.active { cursor: pointer; }
+        .app-card.active:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px -10px rgba(var(--card-rgb), 0.15);
+            border-color: var(--card-color);
+        }
+
+        .app-card.inactive {
+            opacity: 0.6; cursor: not-allowed; pointer-events: none; background: #f8fafc; box-shadow: none;
+        }
+
+        .app-card.forbidden {
+            opacity: 0.8; cursor: not-allowed; pointer-events: none; background: #fafafa; border-color: #f1f5f9; box-shadow: none;
+        }
+        
+        .app-card.forbidden .app-icon-wrapper { filter: grayscale(100%); opacity: 0.6; }
+
+        .badge {
+            position: absolute; top: 16px; right: 16px; font-size: 11px; padding: 4px 10px; border-radius: 8px; font-weight: 700;
+        }
+
+        .badge-inactive { background: #e2e8f0; color: #64748b; }
+        .badge-forbidden { 
+            background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; display: flex; align-items: center; gap: 4px;
+        }
+
+        .app-icon-wrapper {
+            width: 68px; height: 68px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; flex-shrink: 0; transition: transform 0.3s ease;
+        }
+
+        .app-card.active:hover .app-icon-wrapper { transform: scale(1.05); }
+        .app-icon-wrapper img { width: 40px; height: 40px; object-fit: contain; }
+
+        .app-details { flex: 1; }
+        .app-details h3 { font-size: 18px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.3px; }
+        .app-details p { font-size: 13px; color: var(--text-gray); line-height: 1.5; margin-bottom: 8px; font-weight: 500; }
+        
+        .app-url {
+            font-size: 12px; font-weight: 700; color: var(--card-color); display: inline-flex; align-items: center; gap: 4px;
+        }
+
+        .app-card.active .app-url::after {
+            content: '→'; opacity: 0; transform: translateX(-5px); transition: all 0.3s;
+        }
+        .app-card.active:hover .app-url::after { opacity: 1; transform: translateX(0); }
+        .app-card.inactive .app-url, .app-card.forbidden .app-url { color: #94a3b8; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); z-index: 1000;
+            justify-content: center; align-items: center; padding: 16px;
+        }
+        .modal-overlay.active { display: flex; }
+        
+        .modal-container {
+            background: white; width: 100%; max-width: 700px; border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden;
+            animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            max-height: 90vh; display: flex; flex-direction: column;
+        }
+
+        @keyframes modalSlideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            padding: 16px 20px; border-bottom: 1px solid #f1f5f9; display: flex;
+            justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        .modal-header h3 { font-size: 16px; font-weight: 700; color: var(--text-dark); }
+        
+        .modal-close {
+            background: #f1f5f9; border: none; width: 32px; height: 32px; border-radius: 50%;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-gray);
+            font-weight: bold; transition: background 0.2s;
+        }
+        .modal-close:hover { background: #e2e8f0; color: var(--text-dark); }
+
+        .modal-body { padding: 20px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+
+        /* Style Tabel Online Users */
+        .online-user-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 14px; border-bottom: 1px solid #f1f5f9; gap: 12px;
+        }
+        .online-user-item:last-child { border-bottom: none; }
+        .online-user-info { display: flex; align-items: center; gap: 12px; }
+        .online-user-avatar {
+            width: 38px; height: 38px; border-radius: 50%; background: var(--primary-blue);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 14px; flex-shrink: 0; overflow: hidden;
+        }
+        .online-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .online-user-details .name { font-size: 14px; font-weight: 700; color: var(--text-dark); }
+        .online-user-details .role { font-size: 12px; color: var(--text-gray); }
+        .online-user-time { font-size: 11px; color: var(--primary-teal); font-weight: 600; background: #f0fdfa; padding: 4px 8px; border-radius: 6px; }
+
+        /* Profile Modal Internal Styles */
+        .profile-view-content { text-align: center; }
+        .profile-avatar-large {
+            width: 84px; height: 84px; border-radius: 50%; margin: 0 auto 10px auto;
+            background: linear-gradient(135deg, var(--primary-blue), var(--primary-teal));
+            display: flex; align-items: center; justify-content: center; color: white;
+            font-weight: 700; font-size: 30px; overflow: hidden; box-shadow: 0 6px 15px rgba(20, 184, 166, 0.25);
+        }
+        .profile-avatar-large img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-username { font-size: 14px; color: var(--text-gray); font-weight: 600; margin-bottom: 2px; }
+        .profile-fullname { font-size: 18px; font-weight: 800; color: var(--text-dark); margin-bottom: 4px; }
+        .profile-subtitle-meta { font-size: 13px; color: var(--primary-blue); font-weight: 700; margin-bottom: 16px; }
+        .profile-section-title { font-size: 14px; font-weight: 700; color: var(--text-dark); text-align: left; margin: 16px 0 8px 0; }
+        .info-card-list { display: flex; flex-direction: column; gap: 8px; }
+        .info-card-item {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+            padding: 10px 14px; display: flex; align-items: center; gap: 12px; text-align: left;
+        }
+        .info-card-icon { font-size: 16px; color: var(--primary-teal); display: flex; align-items: center; justify-content: center; }
+        .info-card-detail { display: flex; flex-direction: column; }
+        .info-card-label { font-size: 10px; color: var(--text-gray); font-weight: 600; }
+        .info-card-val { font-size: 13px; color: var(--text-dark); font-weight: 700; }
+
+        .profile-edit-content { display: none; }
+        .edit-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        @media(max-width: 768px) { .edit-grid-layout { grid-template-columns: 1fr; } }
+        
+        .section-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
+        .section-box h4 { font-size: 12px; font-weight: 700; color: var(--primary-blue); margin-bottom: 10px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 11px; font-weight: 600; color: var(--text-dark); margin-bottom: 3px; }
+        .form-group input {
+            width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px;
+            font-size: 13px; font-family: inherit; color: var(--text-dark); background-color: #fff;
+        }
+
+        .upload-group {
+            background: white; border: 1px dashed #cbd5e1; padding: 8px; border-radius: 8px;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
+        }
+        .upload-preview-thumb {
+            width: 36px; height: 36px; border-radius: 6px; object-fit: cover; background: #f1f5f9;
+            border: 1px solid #e2e8f0; flex-shrink: 0; display: flex; align-items: center;
+            justify-content: center; font-size: 8px; color: #94a3b8; text-align: center;
+        }
+        .upload-preview-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+        .upload-input-wrap { flex: 1; min-width: 0; }
+        .upload-input-wrap label { font-size: 10px; color: var(--text-gray); margin-bottom: 1px; display: block; font-weight: 600; }
+        .upload-input-wrap input[type="file"] { font-size: 9px; border: none; padding: 0; background: transparent; width: 100%; }
+
+        .modal-footer {
+            padding: 12px 20px; border-top: 1px solid #f1f5f9; background: #f8fafc;
+            display: flex; justify-content: flex-end; gap: 10px; flex-shrink: 0;
+        }
+        .btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; }
+        .btn-secondary { background: #e2e8f0; color: var(--text-dark); }
+        .btn-secondary:hover { background: #cbd5e1; }
+        .btn-primary { background: var(--primary-blue); color: white; }
+        .btn-primary:hover { background: #1d4ed8; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <a href="/dashboard/" class="brand">
+            <img src="http://dms.lju.co.id/assets/img/lju_logo.png" alt="LJU" class="brand-logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+            <span class="brand-text" style="display:none;">LJU <span>Portal</span></span>
+        </a>
+
+        <div class="user-nav">
+            <!-- Tombol Presensi Online di Topbar -->
+            <a href="https://hris.lju.co.id/modules/attendance/checkin.php" class="topbar-attendance-btn" target="_blank" rel="noopener" title="Presensi Online">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Presensi Online</span>
+            </a>
+
+            <div class="user-meta">
+                <div class="name"><?= htmlspecialchars($user['name'] ?: $user['username']) ?></div>
+                <div class="role"><?= htmlspecialchars($user['position'] ?: $user['role']) ?></div>
+            </div>
+            
+            <div class="user-avatar-container" onclick="openProfileModal()" title="Klik untuk lihat / edit profil">
+                <div class="user-avatar">
+                    <?php if (!empty($avatarUrl)): ?>
+                        <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="Avatar" onerror="this.style.display='none';">
+                    <?php endif; ?>
+                    <span><?= strtoupper(mb_substr($user['name'] ?: $user['username'], 0, 1)) ?></span>
+                </div>
+            </div>
+
+            <a href="logout.php" class="btn-logout" onclick="return confirm('Keluar dari portal LJU?')">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <span class="logout-text">Keluar</span>
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="hero">
+        <h1>Selamat Datang, <?= htmlspecialchars($user['name'] ?? $user['username']) ?></h1>
+        <p><center><?php echo htmlspecialchars($email); ?></center><br>Silakan pilih layanan sistem informasi yang ingin Anda akses</p>
+        <p></p>
+        
+        <!-- Tombol User Online Membuka Modal -->
+        <div class="online-users-badge" onclick="openOnlineUsersModal()" title="Klik untuk lihat daftar pengguna aktif">
+            <span class="pulse-dot"></span>
+            <span class="online-users-text">
+                <strong><?= (int)$jumlahUserOnline ?></strong> Pengguna Online
+            </span>
+        </div>
+    </div>
+
+    <div class="apps-grid">
+        <?php foreach ($apps as $key => $app): ?>
+            <?php 
+                $isActive    = (bool) $app['active'];
+                $isForbidden = false;
+                $infokomOnly = true;
+
+                if ($key === 'wbs' && !$isDireksi) {
+                    $isActive    = false;
+                    $isForbidden = true;
+                }
+                if ($key === 'cms' && !$isInfokom) {
+                    $isActive    = false;
+                    $infokomOnly = false;
+                }
+                if ($isForbidden) {
+                    $cardStatus = 'forbidden';
+                } elseif (!$isActive) {
+                    $cardStatus = 'inactive';
+                } else {
+                    $cardStatus = 'active';
+                }
+                
+                $iconPath = $isActive ? ($app['icon_active'] ?? '') : ($app['icon_inactive'] ?? '');
+                
+                $cardColor = $app['color'] ?? '#1e40af';
+                list($r,$g, $b) = sscanf($cardColor, "#%02x%02x%02x");
+                $colorRGB = "$r, $g,$b";
+            ?>
+            <a 
+                href="<?= $isActive ? htmlspecialchars($app['url']) : 'javascript:void(0)' ?>" 
+                class="app-card <?= $cardStatus ?>"
+                style="--card-color: <?= $cardColor ?>; --card-rgb: <?= $colorRGB ?>;"
+                <?= $isActive && $key === 'webmail' ? 'target="_blank" rel="noopener"' : ($isActive ? 'target="_self" rel="noopener"' : 'tabindex="-1" aria-disabled="true"') ?>
+            >
+                <?php if ($isForbidden): ?>
+                    <span class="badge badge-forbidden">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Khusus Direksi
+                    </span>
+                <?php elseif (!$isActive): ?>
+                    <span class="badge badge-inactive">Segera Hadir</span>
+                <?php endif; ?>
+                
+                <?php if (!$infokomOnly): ?>
+                    <span class="badge badge-forbidden">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        Khusus Infokom
+                    </span>
+                <?php endif; ?>
+
+                <div class="app-icon-wrapper" style="background: rgba(<?= $colorRGB ?>, 0.1); color: <?= $cardColor ?>;">
+                    <?php if (!empty($iconPath) && file_exists(__DIR__ . '/../' .$iconPath)): ?>
+                        <img src="<?= htmlspecialchars($iconPath) ?>" alt="<?= htmlspecialchars($app['name']) ?>">
+                    <?php else: ?>
+                        <span><?= $app['emoji'] ?? '💻' ?></span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="app-details">
+                    <h3><?= htmlspecialchars($app['name']) ?></h3>
+                    <p><?= htmlspecialchars($app['description']) ?></p>
+                    <span class="app-url">
+                        <?= $key === 'webmail' ? 'mail.lju.co.id:2096' : parse_url($app['url'], PHP_URL_HOST) ?>
+                    </span>
+                </div>
+            </a>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<!-- Modal Daftar User Online -->
+<div class="modal-overlay" id="onlineUsersModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3>Daftar Pengguna Online (<?= count($onlineUsersList) ?>)</h3>
+            <button class="modal-close" onclick="closeOnlineUsersModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <?php if (!empty($onlineUsersList)): ?>
+                <?php foreach ($onlineUsersList as $uOnline): ?>
+                    <?php 
+                        $uAvatar = !empty($uOnline['avatar']) ? 'https://dms.lju.co.id/uploads/avatars/' . htmlspecialchars($uOnline['avatar']) : '';
+                    ?>
+                    <div class="online-user-item">
+                        <div class="online-user-info">
+                            <div class="online-user-avatar">
+                                <?php if (!empty($uAvatar)): ?>
+                                    <img src="<?= $uAvatar ?>" alt="User Avatar" onerror="this.style.display='none';">
+                                <?php endif; ?>
+                                <span><?= strtoupper(mb_substr($uOnline['name'] ?: $uOnline['username'], 0, 1)) ?></span>
+                            </div>
+                            <div class="online-user-details">
+                                <div class="name"><?= htmlspecialchars($uOnline['name'] ?: $uOnline['username']) ?></div>
+                                <div class="role"><?= htmlspecialchars(($uOnline['position'] ?: 'Staff') . ' - ' . ($uOnline['division'] ?: '-')) ?></div>
+                            </div>
+                        </div>
+                        <div class="online-user-time">
+                            Login: <?= date('H:i', strtotime($uOnline['last_login'])) ?> WIB
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="text-align: center; color: var(--text-gray); padding: 20px 0;">Tidak ada pengguna aktif online saat ini.</p>
+            <?php endif; ?>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeOnlineUsersModal()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal View & Edit User Profile -->
+<div class="modal-overlay" id="profileModal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modalTitle">Profil Pengguna</h3>
+            <button class="modal-close" onclick="closeProfileModal()">&times;</button>
+        </div>
+        
+        <form id="profileForm" action="https://lju.co.id/dashboard/update_profile.php" method="POST" enctype="multipart/form-data">
+            <div class="modal-body">
+                
+                <!-- BAGIAN 1: VIEW PROFIL -->
+                <div id="profileViewSection" class="profile-view-content">
+                    <div class="profile-avatar-large">
+                        <?php if (!empty($avatarUrl)): ?>
+                            <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="Avatar">
+                        <?php else: ?>
+                            <span><?= strtoupper(mb_substr($user['name'] ?: $user['username'], 0, 1)) ?></span>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <?php 
+                        $profileDisplayName = !empty($user['webmail_user']) ? $user['webmail_user'] : (!empty($user['email']) ? $user['email'] : $user['username']);
+                        $jabatan = $user['position'] ?? '-';
+                        $bidang  = $user['division'] ?? '-';
+                        $divisi  = $user['department'] ?? '-';
+                        $metaText = htmlspecialchars("$jabatan - $bidang - $divisi");
+                    ?>
+                    
+                    <div class="profile-username">User : <?= htmlspecialchars($user['username']) ?></div>
+                    <div class="profile-fullname"><?= htmlspecialchars($profileDisplayName) ?></div>
+                    <div class="profile-subtitle-meta"><?= $metaText ?></div>
+
+                    <div class="profile-section-title">Information</div>
+                    <div class="info-card-list">
+                        <div class="info-card-item">
+                            <div class="info-card-icon">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                            </div>
+                            <div class="info-card-detail">
+                                <span class="info-card-label">Nama Lengkap</span>
+                                <span class="info-card-val"><?= htmlspecialchars($user['name'] ?: '-') ?></span>
+                            </div>
+                        </div>
+
+                        <div class="info-card-item">
+                            <div class="info-card-icon">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div class="info-card-detail">
+                                <span class="info-card-label">E-mail</span>
+                                <span class="info-card-val"><?= htmlspecialchars($user['email'] ?: '-') ?></span>
+                            </div>
+                        </div>
+
+                        <div class="info-card-item">
+                            <div class="info-card-icon">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path></svg>
+                            </div>
+                            <div class="info-card-detail">
+                                <span class="info-card-label">NIK/NIP</span>
+                                <span class="info-card-val"><?= htmlspecialchars($user['nik'] ?: '-') ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BAGIAN 2: EDIT PROFIL FORM -->
+                <div id="profileEditSection" class="profile-edit-content">
+                    <div class="edit-grid-layout">
+                        <div class="section-box">
+                            <h4>Edit Informasi Akun</h4>
+                            
+                            <div class="form-group">
+                                <label>Nama Lengkap</label>
+                                <input type="text" name="name" value="<?= htmlspecialchars($user['name']) ?>" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Username</label>
+                                <input type="text" name="username" value="<?= htmlspecialchars($user['username']) ?>" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Password Baru <small style="color:var(--text-gray);">(Kosongkan jika tetap)</small></label>
+                                <input type="password" name="password" placeholder="••••••••">
+                            </div>
+
+                            <div class="form-group">
+                                <label>NIK</label>
+                                <input type="text" name="nik" value="<?= htmlspecialchars($user['nik']) ?>">
+                            </div>
+
+                            <div class="form-group">
+                                <label>Email</label>
+                                <input type="email" name="email" value="<?= htmlspecialchars($user['email']) ?>">
+                            </div>
+                        </div>
+
+                        <div class="section-box">
+                            <h4>File Media & Tanda Tangan</h4>
+                            
+                            <div class="upload-group">
+                                <div class="upload-preview-thumb">
+                                    <?php if (!empty($avatarUrl)): ?>
+                                        <img src="<?= htmlspecialchars($avatarUrl) ?>" alt="Avatar">
+                                    <?php else: ?>
+                                        <span>No Image</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="upload-input-wrap">
+                                    <label>Ganti Avatar (<i>/avatars</i>)</label>
+                                    <input type="file" name="avatar" accept="image/*">
+                                </div>
+                            </div>
+
+                            <div class="upload-group">
+                                <div class="upload-preview-thumb">
+                                    <?php if (!empty($photoUrl)): ?>
+                                        <img src="<?= htmlspecialchars($photoUrl) ?>" alt="Photo">
+                                    <?php else: ?>
+                                        <span>No Photo</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="upload-input-wrap">
+                                    <label>Ganti Foto (<i>/photos</i>)</label>
+                                    <input type="file" name="photo" accept="image/*">
+                                </div>
+                            </div>
+
+                            <div class="upload-group">
+                                <div class="upload-preview-thumb">
+                                    <?php if (!empty($sigUrl)): ?>
+                                        <img src="<?= htmlspecialchars($sigUrl) ?>" alt="Signature">
+                                    <?php else: ?>
+                                        <span>No Sign</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="upload-input-wrap">
+                                    <label>Ganti Tanda Tangan (<i>/signatures</i>)</label>
+                                    <input type="file" name="signature" accept="image/*">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <div class="modal-footer" id="modalFooter">
+                <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Close</button>
+                <button type="button" class="btn btn-primary" onclick="switchToEditMode()">Edit Profile</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Profil Modal Handler
+    function openProfileModal() {
+        showViewMode();
+        document.getElementById('profileModal').classList.add('active');
+    }
+
+    function closeProfileModal() {
+        document.getElementById('profileModal').classList.remove('active');
+    }
+
+    function switchToEditMode() {
+        document.getElementById('modalTitle').innerText = 'Edit Profil Pengguna';
+        document.getElementById('profileViewSection').style.display = 'none';
+        document.getElementById('profileEditSection').style.display = 'block';
+        
+        document.getElementById('modalFooter').innerHTML = `
+            <button type="button" class="btn btn-secondary" onclick="showViewMode()">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+        `;
+    }
+
+    function showViewMode() {
+        document.getElementById('modalTitle').innerText = 'Profil Pengguna';
+        document.getElementById('profileViewSection').style.display = 'block';
+        document.getElementById('profileEditSection').style.display = 'none';
+        
+        document.getElementById('modalFooter').innerHTML = `
+            <button type="button" class="btn btn-secondary" onclick="closeProfileModal()">Close</button>
+            <button type="submit" class="btn btn-primary" onclick="switchToEditMode()">Edit Profile</button>
+        `;
+    }
+
+    // User Online Modal Handler
+    function openOnlineUsersModal() {
+        document.getElementById('onlineUsersModal').classList.add('active');
+    }
+
+    function closeOnlineUsersModal() {
+        document.getElementById('onlineUsersModal').classList.remove('active');
+    }
+
+    // Close on overlay click
+    window.addEventListener('click', function(e) {
+        const profileModal = document.getElementById('profileModal');
+        const onlineUsersModal = document.getElementById('onlineUsersModal');
+        if (e.target === profileModal) {
+            closeProfileModal();
+        }
+        if (e.target === onlineUsersModal) {
+            closeOnlineUsersModal();
+        }
+    });
+</script>
+
+</body>
+</html>
