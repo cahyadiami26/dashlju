@@ -1,0 +1,28 @@
+# ============================================================
+# Proteksi file sensitif — dashlju (Portal SSO)
+# Aman untuk shared hosting cPanel (Apache + mod_authz_core).
+# ============================================================
+
+# Blok akses ke file kredensial & konfigurasi internal
+<FilesMatch "^(\.env|\.env\..*|users_schema\.sql|composer\.(json|lock)|README\.md|readme\.md)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Folder config/ punya .htaccess sendiri ("Require all denied")
+
+# Jangan sajikan file log / backup
+<FilesMatch "\.(log|bak|old)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

@@ -12,6 +12,13 @@ Portal login terpusat (username/password, NFC, dan **Login with Google**).
 4. Salin **Client ID** dan **Client Secret**.
 
 ### 2. Konfigurasi `.env` (tanpa hardcode kredensial)
+
+**Opsi A — tanpa terminal (cPanel/shared hosting):** buka
+`https://domain-anda/dashboard/cpanel_deploy_check.php?key=GANTI_KEY_ANDA`
+(ganti nilai `GANTI_KEY_ANDA` di dalam file sebelum upload), lalu isi form kredensial;
+file `.env` ditulis otomatis dan seluruh checklist terverifikasi real-time.
+
+**Opsi B — via SSH / File Manager:**
 ```bash
 cp .env.example .env      # lalu isi nilainya
 ```
@@ -48,13 +55,13 @@ Pastikan kolom `users.email` **terisi dan unik** — pencocokan akun Google mema
 - Akses outbound ke `accounts.google.com`, `oauth2.googleapis.com`, `openidconnect.googleapis.com` (port 443).
 - Portal diakses via **HTTPS** (wajib untuk cookie session & OAuth redirect).
 
-### 5. Verifikasi otomatis
-Jalankan health-check untuk memastikan semua langkah di atas benar:
-```bash
-php google_setup_check.php          # dari SSH/cPanel terminal
-# atau buka https://domain-anda/google_setup_check.php dari browser di server itu sendiri (localhost)
-```
-Hasilnya berupa daftar `[ OK ] / [WARN] / [FAIL]` per aspek: `.env`, redirect URI, konektivitas & validitas kredensial ke Google, koneksi DB, struktur migrasi, dan kesiapan data email user. **Hapus file ini setelah setup selesai.**
+### 5. Verifikasi otomatis (tanpa CLI, cukup browser)
+Buka `cpanel_deploy_check.php?key=<ACCESS_KEY>` dari browser. Halaman tersebut berisi:
+form penulisan `.env`, checklist redirect URI, uji konektivitas & validitas kredensial ke Google,
+cek koneksi DB, **tombol migrasi database otomatis**, cek kesiapan data email user, dan link uji alur OAuth nyata.
+Perbaiki semua baris `[FAIL]` sampai hijau. Versi CLI (jika punya SSH): `php google_setup_check.php`.
+
+**Hapus file checker (`cpanel_deploy_check.php` dan `google_setup_check.php`) setelah setup selesai.**
 
 ### 6. Uji coba manual
 1. Buka form login → tombol **"Masuk dengan Google"** harus muncul (hanya tampil jika kredensial terisi).
@@ -69,4 +76,5 @@ Hasilnya berupa daftar `[ OK ] / [WARN] / [FAIL]` per aspek: `.env`, redirect UR
 | `google_callback.php` | Callback: validasi state → tukar code→token → ambil profil → cocokkan `users.email` → buat session |
 | `config/google.php` | Konfigurasi & helper OAuth (dibaca dari `.env`) |
 | `config/env.php` | Loader `.env` murni PHP tanpa library |
-| `google_setup_check.php` | Health-check implementasi (hapus setelah dipakai) |
+| `google_setup_check.php` | Health-check versi CLI/teks (hapus setelah dipakai) |
+| `cpanel_deploy_check.php` | Setup wizard + health-check via browser — tulis `.env`, jalankan migrasi, verifikasi (khusus cPanel tanpa CLI; hapus setelah dipakai) |
