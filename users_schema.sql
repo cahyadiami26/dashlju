@@ -1,3 +1,10 @@
+
+# ---------- Migrasi Database (Login with Google) ----------
+# Jalankan file ini di phpMyAdmin / MySQL CLI pada database portal (mis. ljucoid_dms):
+#   mysql -u USER -p NAMA_DB < users_schema.sql
+# CATATAN: statement CREATE TABLE `users` di baris pertama hanya untuk referensi;
+# jika tabel users SUDAH ADA, JANGAN jalankan baris itu — cukup jalankan bagian
+# ALTER TABLE (index email) dan CREATE TABLE login_logs di bawahnya.
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `nik` varchar(50) DEFAULT NULL,
