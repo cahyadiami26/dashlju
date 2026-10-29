@@ -12,9 +12,12 @@
  *    (disarankan lewat environment variable, bukan hardcode)
  */
 
-// Ambil dari environment variable jika ada, jika tidak pakai nilai default kosong.
-define('GOOGLE_CLIENT_ID',     getenv('GOOGLE_CLIENT_ID')     ?: '');
-define('GOOGLE_CLIENT_SECRET', getenv('GOOGLE_CLIENT_SECRET') ?: '');
+// Muat kredensial dari file .env (jika ada) — tanpa library eksternal
+require_once __DIR__ . '/env.php';
+
+// Ambil dari environment variable / .env jika ada, jika tidak pakai nilai default kosong.
+define('GOOGLE_CLIENT_ID',     env('GOOGLE_CLIENT_ID',     ''));
+define('GOOGLE_CLIENT_SECRET', env('GOOGLE_CLIENT_SECRET', ''));
 
 // Harus SAMA persis dengan Authorized redirect URI di Google Cloud Console
 if (!defined('APP_URL_PORTAL')) {
@@ -24,7 +27,7 @@ if (!defined('APP_URL_PORTAL')) {
 
 // Redirect URI bisa dioverride lewat environment variable,
 // HARUS SAMA PERSIS dengan Authorized redirect URI di Google Cloud Console.
-define('GOOGLE_REDIRECT_URI', getenv('GOOGLE_REDIRECT_URI')
+define('GOOGLE_REDIRECT_URI', env('GOOGLE_REDIRECT_URI')
     ?: rtrim(APP_URL_PORTAL, '/') . '/google_callback.php');
 
 define('GOOGLE_AUTH_ENDPOINT', 'https://accounts.google.com/o/oauth2/v2/auth');

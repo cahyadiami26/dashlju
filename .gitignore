@@ -1,0 +1,6 @@
+# Kredensial lokal — JANGAN di-commit
+.env
+
+# Log & backup
+*.log
+config/session.php.old

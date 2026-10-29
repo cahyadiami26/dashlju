@@ -2,14 +2,19 @@
 /**
  * Konfigurasi Database - Menggunakan database DMS
  * File: config/database.php
+ *
+ * Kredensial bisa dioverride lewat environment variable / file .env
+ * (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_CHARSET).
  */
 
-define('DB_HOST', 'localhost');
-define('DB_PORT', '3306');
-define('DB_NAME', 'ljucoid_dms');
-define('DB_USER', 'ljucoid_dms');
-define('DB_PASS', 'icikiwir2026');
-define('DB_CHARSET', 'utf8mb4');
+require_once __DIR__ . '/env.php';
+
+define('DB_HOST', env('DB_HOST', 'localhost'));
+define('DB_PORT', env('DB_PORT', '3306'));
+define('DB_NAME', env('DB_NAME', 'ljucoid_dms'));
+define('DB_USER', env('DB_USER', 'ljucoid_dms'));
+define('DB_PASS', env('DB_PASS', 'icikiwir2026'));
+define('DB_CHARSET', env('DB_CHARSET', 'utf8mb4'));
 
 define('BIDANG', [
     'Direksi','Keuangan', 'Pengadaan', 'Keamanan', 'Infokom', 'SDM', 
