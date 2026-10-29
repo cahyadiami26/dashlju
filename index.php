@@ -8,10 +8,17 @@
 require_once __DIR__ . '/config/session.php';
 require_once __DIR__ . '/config/database.php';
 require_once __DIR__ . '/config/apps.php';
+require_once __DIR__ . '/config/google.php';
 
 $pdo = getDBConnection();
 $error = '';
 $apps = getAppsConfig();
+
+// Tampilkan pesan error dari proses login Google (jika ada)
+if (isset($_SESSION['google_login_error'])) {
+    $error = $_SESSION['google_login_error'];
+    unset($_SESSION['google_login_error']);
+}
 
 // Fallback jika fungsi belum terdefinisi
 if (function_exists('getAllowedRedirectUrls')) {

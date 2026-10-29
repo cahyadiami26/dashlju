@@ -19,3 +19,23 @@ CREATE TABLE `users` (
   `webmail_user` varchar(200) NOT NULL,
   `webmail_pass` varchar(16) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
+
+-- ============================================
+-- Dukungan Login with Google (OAuth 2.0)
+-- ============================================
+
+-- Index pada kolom email agar pencarian user via email Google cepat
+ALTER TABLE `users` ADD INDEX `idx_users_email` (`email`);
+
+-- Tabel log login (dipakai oleh index.php, google_callback.php, AuthController)
+CREATE TABLE IF NOT EXISTS `login_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `activity` enum('login_success','login_failed','login_nfc_success','login_google_success','logout','timeout') DEFAULT 'login_success',
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_user_activity` (`user_id`,`activity`,`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
